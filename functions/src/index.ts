@@ -1,17 +1,20 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-const express = require('express');
+import * as functions from 'firebase-functions';
+import * as express from 'express';
+import axios from 'axios';
+import cheerio from 'cheerio';
+
 const app = express();
 
 const request = axios.create({
   timeout: 3000,
   headers: {
-    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_4) AppleWebKit/537.36 ' +
+    '(KHTML, like Gecko) Chrome/66.0.3359.181 Safari/537.36',
   },
 });
 
 // routing
-app.get('/book/:id', async (req, res) => {
+app.get('/:id', async (req, res) => {
   try {
     const { params: { id } } = req;
 
@@ -19,7 +22,7 @@ app.get('/book/:id', async (req, res) => {
       throw new Error('Invalid ISBN Number.');
     }
 
-    let responses = [];
+    const responses = [];
     const bookTwResponse = await getDetailsFromBooksTw(id);
     const kingstoneResponse = await getDetailsFromKingstone(id);
     const superbookcityResponse = await getDetailsFromSuperbookcity(id);
@@ -27,7 +30,9 @@ app.get('/book/:id', async (req, res) => {
     return res.status(200).json(responses);
   } catch (e) {
     console.log(e);
-    if (e.message) return res.status(400).json({ err: e.message });
+    if (e.message) {
+      return res.status(400).json({ err: e.message });
+    }
     return res.status(500).json({ err: 'Unexpected error' });
   }
 });
@@ -46,16 +51,16 @@ async function getDetailsFromBooksTw(isbnNumber) {
     const result = $('form#searchlist ul.searchbook li');
     if (result.length === 0) throw new Error('No result found');
 
-    result.each((index, elem) => {
-      const bookUrl = $(elem).find('a[rel=mid_name]').attr('href');
-      const bookName = $(elem).find('h3').text().trim();
-      const bookCat = $(elem).find('span.cat').text().trim();
+    result.each((i, e) => {
+      const bookUrl = $(e).find('a[rel=mid_name]').attr('href');
+      const bookName = $(e).find('h3').text().trim();
+      const bookCat = $(e).find('span.cat').text().trim();
       const bookAuthors = [];
-      $(elem).find('a[rel=go_author]').each((index, elem) => {
+      $(e).find('a[rel=go_author]').each((j, elem) => {
         bookAuthors.push($(elem).text().trim());
       });
-      const bookPublisher = $(elem).find('a[rel=mid_publish]').text().trim();
-      const bookPrice = $(elem).find('span.price strong').last().text().trim().match(/\d+/).join('');
+      const bookPublisher = $(e).find('a[rel=mid_publish]').text().trim();
+      const bookPrice = $(e).find('span.price strong').last().text().trim().match(/\d+/).join('');
 
       response.push({
         source: '博客來',
@@ -63,8 +68,8 @@ async function getDetailsFromBooksTw(isbnNumber) {
         name: bookName || '',
         cat: bookCat || '',
         authors: bookAuthors.length > 0
-          ? bookAuthors.join()
-          : '',
+                    ? bookAuthors.join()
+                    : '',
         publisher: bookPublisher || '',
         price: bookPrice || 0,
         currency: 'TWD',
@@ -92,16 +97,16 @@ async function getDetailsFromKingstone(isbnNumber) {
     const result = $('div.box.row_list ul li');
     if (result.length === 0) throw new Error('No result found');
 
-    result.each((index, elem) => {
-      const bookUrl = $(elem).find('a.anchor').attr('href');
-      const bookName = $(elem).find('a.anchor span').text().trim();
-      const bookCat = $(elem).find('span.classification a.main_class').text().trim();
+    result.each((i, e) => {
+      const bookUrl = $(e).find('a.anchor').attr('href');
+      const bookName = $(e).find('a.anchor span').text().trim();
+      const bookCat = $(e).find('span.classification a.main_class').text().trim();
       const bookAuthors = [];
-      $(elem).find('span.author a').each((index, elem) => {
+      $(e).find('span.author a').each((j, elem) => {
         bookAuthors.push($(elem).text().trim());
       });
-      const bookPublisher = $(elem).find('span.publisher a').text().trim();
-      const bookPrice = $(elem).find('span.price span').last().text().trim().match(/\d+/).join('');
+      const bookPublisher = $(e).find('span.publisher a').text().trim();
+      const bookPrice = $(e).find('span.price span').last().text().trim().match(/\d+/).join('');
 
       response.push({
         source: '金石堂',
@@ -109,14 +114,14 @@ async function getDetailsFromKingstone(isbnNumber) {
         name: bookName || '',
         cat: bookCat || '',
         authors: bookAuthors.length > 0
-          ? bookAuthors.join()
-          : '',
+                    ? bookAuthors.join()
+                    : '',
         publisher: bookPublisher || '',
         price: bookPrice || 0,
         currency: 'TWD',
         url: bookUrl
-          ? baseUrl + bookUrl
-          : '',
+                    ? baseUrl + bookUrl
+                    : '',
       });
     });
   } catch (e) {
@@ -138,17 +143,18 @@ async function getDetailsFromSuperbookcity(isbnNumber) {
 
     const $ = cheerio.load(data);
     const result = $('div.results-view ul.products-grid li.item');
-    if (result.length === 0)
+    if (result.length === 0) {
       throw new Error('No result found');
+    }
 
-    result.each((index, elem) => {
-      const bookUrl = $(elem).find('h2.product-name a').attr('href');
-      const bookName = $(elem).find('h2.product-name').text().trim();
-      const bookAuthors = $(elem).find('div.author').text().trim().replace('作者:', '');
-      let bookPrice = $(elem).find('p.special-price span.price').text().trim().replace('HK$', '');
+    result.each((i, e) => {
+      const bookUrl = $(e).find('h2.product-name a').attr('href');
+      const bookName = $(e).find('h2.product-name').text().trim();
+      const bookAuthors = $(e).find('div.author').text().trim().replace('作者:', '');
+      let bookPrice = $(e).find('p.special-price span.price').text().trim().replace('HK$', '');
 
       if (!bookPrice) {
-        bookPrice = $(elem).find('span.regular-price span.price').text().trim().replace('HK$', '');
+        bookPrice = $(e).find('span.regular-price span.price').text().trim().replace('HK$', '');
       }
 
       response.push({
@@ -170,5 +176,4 @@ async function getDetailsFromSuperbookcity(isbnNumber) {
   return response;
 }
 
-// start server
-app.listen(3000, () => console.log('BookSearchAPI listening on port 3000!'));
+exports.book = functions.https.onRequest(app);
