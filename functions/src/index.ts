@@ -23,8 +23,8 @@ app.get('/isbn/:id', async (req, res) => {
     }
 
     const responses = [];
-    const bookTwResponse = await getDetailsFromBooksTw(id);
-    const kingstoneResponse = await getDetailsFromKingstone(id);
+    const [bookTwResponse, kingstoneResponse] =
+        await Promise.all([getDetailsFromBooksTw(id), getDetailsFromKingstone(id)]);
     // const superbookcityResponse = await getDetailsFromSuperbookcity(id);
     responses.push(...bookTwResponse, ...kingstoneResponse);
     return res.status(200).json({ data: responses });
@@ -53,6 +53,7 @@ async function getDetailsFromBooksTw(isbnNumber) {
 
     result.each((i, e) => {
       const bookUrl = $(e).find('a[rel=mid_name]').attr('href');
+      const bookImage = $(e).find('a[rel=mid_image] img').attr('data-original');
       const bookName = $(e).find('h3').text().trim();
       const bookCat = $(e).find('span.cat').text().trim();
       const bookAuthors = [];
@@ -73,7 +74,8 @@ async function getDetailsFromBooksTw(isbnNumber) {
         publisher: bookPublisher || '',
         price: bookPrice || 0,
         currency: 'TWD',
-        url: bookUrl || '',
+        url: bookUrl ? 'http:' + bookUrl : '',
+        image: bookImage || '',
       });
     });
   } catch (e) {
@@ -100,6 +102,7 @@ async function getDetailsFromKingstone(isbnNumber) {
 
     result.each((i, e) => {
       const bookUrl = $(e).find('a.anchor').attr('href');
+      const bookImage = $(e).find('a.anchor img').attr('src');
       const bookName = $(e).find('a.anchor span').text().trim();
       const bookCat = $(e).find('span.classification a.main_class').text().trim();
       const bookAuthors = [];
@@ -120,9 +123,8 @@ async function getDetailsFromKingstone(isbnNumber) {
         publisher: bookPublisher || '',
         price: bookPrice || 0,
         currency: 'TWD',
-        url: bookUrl
-                    ? baseUrl + bookUrl
-                    : '',
+        url: bookUrl ? baseUrl + bookUrl : '',
+        image: bookImage || '',
       });
     });
   } catch (e) {
