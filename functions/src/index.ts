@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as express from 'express';
 import axios from 'axios';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 
 const app = express();
 
@@ -14,30 +14,30 @@ const request = axios.create({
 });
 
 // routing
-app.get('/:id', async (req, res) => {
+app.get('/isbn/:id', async (req, res) => {
   try {
     const { params: { id } } = req;
 
-    if (Number.isNaN(id) || (id.toString().length !== 13 && id.toString().length !== 10)) {
+    if (Number.isNaN(id) || (id.length !== 13 && id.length !== 10)) {
       throw new Error('Invalid ISBN Number.');
     }
 
     const responses = [];
     const bookTwResponse = await getDetailsFromBooksTw(id);
     const kingstoneResponse = await getDetailsFromKingstone(id);
-    const superbookcityResponse = await getDetailsFromSuperbookcity(id);
-    responses.push(...bookTwResponse, ...kingstoneResponse, ...superbookcityResponse);
-    return res.status(200).json(responses);
+    // const superbookcityResponse = await getDetailsFromSuperbookcity(id);
+    responses.push(...bookTwResponse, ...kingstoneResponse);
+    return res.status(200).json({ data: responses });
   } catch (e) {
     console.log(e);
     if (e.message) {
       return res.status(400).json({ err: e.message });
     }
-    return res.status(500).json({ err: 'Unexpected error' });
+    return res.status(500).json({ err: 'Unexpected error.' });
   }
 });
 
-app.get('*', async (req, res) => res.send('OK'));
+app.get('*', async (req, res) => res.send(''));
 
 // 博客來 (books.com.tw)
 async function getDetailsFromBooksTw(isbnNumber) {
@@ -77,6 +77,7 @@ async function getDetailsFromBooksTw(isbnNumber) {
       });
     });
   } catch (e) {
+    console.log(e);
     response.push({
       source: '博客來',
       active: false,
@@ -125,6 +126,7 @@ async function getDetailsFromKingstone(isbnNumber) {
       });
     });
   } catch (e) {
+    console.log(e);
     response.push({
       source: '金石堂',
       active: false,
@@ -134,46 +136,46 @@ async function getDetailsFromKingstone(isbnNumber) {
 }
 
 // 超閱網 (superbookcity.com)
-async function getDetailsFromSuperbookcity(isbnNumber) {
-  const response = [];
-  try {
-    const baseUrl = 'https://www.superbookcity.com';
-    const searchUrl = '/catalogsearch/result/?q=';
-    const { data } = await request.get(baseUrl + searchUrl + isbnNumber);
-
-    const $ = cheerio.load(data);
-    const result = $('div.results-view ul.products-grid li.item');
-    if (result.length === 0) {
-      throw new Error('No result found');
-    }
-
-    result.each((i, e) => {
-      const bookUrl = $(e).find('h2.product-name a').attr('href');
-      const bookName = $(e).find('h2.product-name').text().trim();
-      const bookAuthors = $(e).find('div.author').text().trim().replace('作者:', '');
-      let bookPrice = $(e).find('p.special-price span.price').text().trim().replace('HK$', '');
-
-      if (!bookPrice) {
-        bookPrice = $(e).find('span.regular-price span.price').text().trim().replace('HK$', '');
-      }
-
-      response.push({
-        source: '超閱網',
-        active: true,
-        name: bookName || '',
-        authors: bookAuthors || '',
-        price: bookPrice || 0,
-        currency: 'HKD',
-        url: bookUrl || '',
-      });
-    });
-  } catch (e) {
-    response.push({
-      source: '超閱網',
-      active: false,
-    });
-  }
-  return response;
-}
+// async function getDetailsFromSuperbookcity(isbnNumber) {
+//   const response = [];
+//   try {
+//     const baseUrl = 'https://www.superbookcity.com';
+//     const searchUrl = '/catalogsearch/result/?q=';
+//     const { data } = await request.get(baseUrl + searchUrl + isbnNumber);
+//
+//     const $ = cheerio.load(data);
+//     const result = $('div.results-view ul.products-grid li.item');
+//     if (result.length === 0) {
+//       throw new Error('No result found');
+//     }
+//
+//     result.each((i, e) => {
+//       const bookUrl = $(e).find('h2.product-name a').attr('href');
+//       const bookName = $(e).find('h2.product-name').text().trim();
+//       const bookAuthors = $(e).find('div.author').text().trim().replace('作者:', '');
+//       let bookPrice = $(e).find('p.special-price span.price').text().trim().replace('HK$', '');
+//
+//       if (!bookPrice) {
+//         bookPrice = $(e).find('span.regular-price span.price').text().trim().replace('HK$', '');
+//       }
+//
+//       response.push({
+//         source: '超閱網',
+//         active: true,
+//         name: bookName || '',
+//         authors: bookAuthors || '',
+//         price: bookPrice || 0,
+//         currency: 'HKD',
+//         url: bookUrl || '',
+//       });
+//     });
+//   } catch (e) {
+//     response.push({
+//       source: '超閱網',
+//       active: false,
+//     });
+//   }
+//   return response;
+// }
 
 exports.book = functions.https.onRequest(app);
