@@ -43,7 +43,7 @@ app.get('*', async (req, res) => res.send(''));
 async function getDetailsFromBooksTw(isbnNumber) {
   const response = [];
   try {
-    const baseUrl = 'http://search.books.com.tw';
+    const baseUrl = 'https://search.books.com.tw';
     const searchUrl = '/search/query/cat/all/key/';
     const { data } = await request.get(baseUrl + searchUrl + isbnNumber);
 
@@ -74,7 +74,7 @@ async function getDetailsFromBooksTw(isbnNumber) {
         publisher: bookPublisher || '',
         price: bookPrice || 0,
         currency: 'TWD',
-        url: bookUrl ? 'http:' + bookUrl : '',
+        url: bookUrl ? 'https:' + bookUrl : '',
         image: bookImage || '',
       });
     });
@@ -136,48 +136,5 @@ async function getDetailsFromKingstone(isbnNumber) {
   }
   return response;
 }
-
-// 超閱網 (superbookcity.com)
-// async function getDetailsFromSuperbookcity(isbnNumber) {
-//   const response = [];
-//   try {
-//     const baseUrl = 'https://www.superbookcity.com';
-//     const searchUrl = '/catalogsearch/result/?q=';
-//     const { data } = await request.get(baseUrl + searchUrl + isbnNumber);
-//
-//     const $ = cheerio.load(data);
-//     const result = $('div.results-view ul.products-grid li.item');
-//     if (result.length === 0) {
-//       throw new Error('No result found');
-//     }
-//
-//     result.each((i, e) => {
-//       const bookUrl = $(e).find('h2.product-name a').attr('href');
-//       const bookName = $(e).find('h2.product-name').text().trim();
-//       const bookAuthors = $(e).find('div.author').text().trim().replace('作者:', '');
-//       let bookPrice = $(e).find('p.special-price span.price').text().trim().replace('HK$', '');
-//
-//       if (!bookPrice) {
-//         bookPrice = $(e).find('span.regular-price span.price').text().trim().replace('HK$', '');
-//       }
-//
-//       response.push({
-//         source: '超閱網',
-//         active: true,
-//         name: bookName || '',
-//         authors: bookAuthors || '',
-//         price: bookPrice || 0,
-//         currency: 'HKD',
-//         url: bookUrl || '',
-//       });
-//     });
-//   } catch (e) {
-//     response.push({
-//       source: '超閱網',
-//       active: false,
-//     });
-//   }
-//   return response;
-// }
 
 exports.book = functions.https.onRequest(app);
