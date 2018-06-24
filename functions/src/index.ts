@@ -23,13 +23,19 @@ app.get('/isbn/:id', async (req, res) => {
       throw new Error('Invalid ISBN Number.');
     }
 
-    const responses = flatten(
+    const data = flatten(
         await Promise.all([
           getDetailsFromBooksTw(id),
           getDetailsFromKingstone(id),
           getDetailsFromCite(id),
+          // getDetailsFromEslite(id),
         ]),
     );
+
+    const responses = data
+        .filter(item => item.active)
+        // sort by price ASC default
+        .sort((a, b) => a.price - b.price);
 
     return res.status(200).json({ data: responses });
   } catch (e) {
@@ -75,7 +81,7 @@ async function getDetailsFromBooksTw(isbnNumber) {
         cat: bookCat || '',
         authors: bookAuthors.length > 0 ? bookAuthors.join() : '',
         publisher: bookPublisher || '',
-        price: bookPrice || 0,
+        price: bookPrice ? parseInt(bookPrice, 10) : 0,
         currency: 'TWD',
         url: bookUrl ? 'https:' + bookUrl : '',
         image: bookImage || '',
@@ -124,7 +130,7 @@ async function getDetailsFromKingstone(isbnNumber) {
                     ? bookAuthors.join()
                     : '',
         publisher: bookPublisher || '',
-        price: bookPrice || 0,
+        price: bookPrice ? parseInt(bookPrice, 10) : 0,
         currency: 'TWD',
         url: bookUrl ? baseUrl + bookUrl : '',
         image: bookImage || '',
@@ -172,7 +178,7 @@ async function getDetailsFromCite(isbnNumber) {
         cat: bookCat || '',
         authors: bookAuthors.length > 0 ? bookAuthors.join() : '',
         publisher: bookPublisher || '',
-        price: bookPrice || 0,
+        price: bookPrice ? parseInt(bookPrice, 10) : 0,
         currency: 'TWD',
         url: bookUrl ? bookUrl.replace('http://', 'https://') : '',
         image: bookImage || '',
@@ -182,6 +188,57 @@ async function getDetailsFromCite(isbnNumber) {
     console.log(e);
     response.push({
       source: '城邦讀書花園',
+      active: false,
+    });
+  }
+  return response;
+}
+
+// 誠品網路書店 (eslite.com)
+async function getDetailsFromEslite(isbnNumber) {
+  const response = [];
+  try {
+    const baseUrl = 'http://www.eslite.com';
+    const searchUrl = '/Search_BW.aspx?query=';
+    const { data } = await request.get(baseUrl + searchUrl + isbnNumber);
+
+    const $ = cheerio.load(data);
+    const result = $('div.box_list table');
+    if (result.length === 0) throw new Error('No result found');
+
+    result.each((i, e) => {
+      const bookUrl = $(e).find('td.cover a').attr('href');
+      const bookImage = $(e).find('img.cover_img').attr('src');
+      const bookName = $(e).find('h3 span').text().trim();
+      const bookCat = $(e).find(`span#ctl00_ContentPlaceHolder1_rptProducts_ctl0${i}_LblCate a`)
+          .first().text().trim();
+      const bookAuthors = [];
+      $(e).find(`span#ctl00_ContentPlaceHolder1_rptProducts_ctl0${i}_LblCharacterName a`)
+          .each((j, elem) => {
+            bookAuthors.push($(elem).text().trim());
+          });
+      const bookPublisher = $(e)
+          .find(`span#ctl00_ContentPlaceHolder1_rptProducts_ctl0${i}_LblManufacturerName a`)
+          .text().trim();
+      const bookPrice = $(e).find('span.price_sale font').last().text().trim();
+
+      response.push({
+        source: '誠品網路書店',
+        active: true,
+        name: bookName || '',
+        cat: bookCat || '',
+        authors: bookAuthors.length > 0 ? bookAuthors.join() : '',
+        publisher: bookPublisher || '',
+        price: bookPrice ? parseInt(bookPrice, 10) : 0,
+        currency: 'TWD',
+        url: bookUrl || '',
+        image: bookImage || '',
+      });
+    });
+  } catch (e) {
+    console.log(e);
+    response.push({
+      source: '誠品網路書店',
       active: false,
     });
   }
