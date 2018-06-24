@@ -11,6 +11,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const functions = require("firebase-functions");
 const express = require("express");
 const axios_1 = require("axios");
+const lodash_1 = require("lodash");
 const cheerio = require("cheerio");
 const app = express();
 const request = axios_1.default.create({
@@ -27,10 +28,11 @@ app.get('/isbn/:id', (req, res) => __awaiter(this, void 0, void 0, function* () 
         if (Number.isNaN(id) || (id.length !== 13 && id.length !== 10)) {
             throw new Error('Invalid ISBN Number.');
         }
-        const responses = [];
-        const [bookTwResponse, kingstoneResponse] = yield Promise.all([getDetailsFromBooksTw(id), getDetailsFromKingstone(id)]);
-        // const superbookcityResponse = await getDetailsFromSuperbookcity(id);
-        responses.push(...bookTwResponse, ...kingstoneResponse);
+        const responses = lodash_1.flatten(yield Promise.all([
+            getDetailsFromBooksTw(id),
+            getDetailsFromKingstone(id),
+            getDetailsFromCite(id),
+        ]));
         return res.status(200).json({ data: responses });
     }
     catch (e) {
@@ -70,9 +72,7 @@ function getDetailsFromBooksTw(isbnNumber) {
                     active: true,
                     name: bookName || '',
                     cat: bookCat || '',
-                    authors: bookAuthors.length > 0
-                        ? bookAuthors.join()
-                        : '',
+                    authors: bookAuthors.length > 0 ? bookAuthors.join() : '',
                     publisher: bookPublisher || '',
                     price: bookPrice || 0,
                     currency: 'TWD',
@@ -134,6 +134,54 @@ function getDetailsFromKingstone(isbnNumber) {
             console.log(e);
             response.push({
                 source: '金石堂',
+                active: false,
+            });
+        }
+        return response;
+    });
+}
+// 城邦讀書花園 (cite.com.tw)
+function getDetailsFromCite(isbnNumber) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const response = [];
+        try {
+            const baseUrl = 'https://www.cite.com.tw';
+            const searchUrl = '/search_result?isbn=';
+            const { data } = yield request.get(baseUrl + searchUrl + isbnNumber);
+            const $ = cheerio.load(data);
+            const result = $('div.book-container ul li.book-area-1');
+            if (result.length === 0)
+                throw new Error('No result found');
+            result.each((i, e) => {
+                const bookUrl = $(e).find('div.book-info-1 h2 a').attr('href');
+                const bookImage = $(e).find('div.book-img a img').attr('src');
+                const bookName = $(e).find('div.book-info-1 h2 a').text().trim()
+                    .replace('�m', '').replace('�n', '');
+                const bookCat = '';
+                const bookAuthors = [];
+                $(e).find('a#writer').each((j, elem) => {
+                    bookAuthors.push($(elem).text().trim());
+                });
+                const bookPublisher = $(e).find('div.book-info-1 div span.underline').first().text().trim();
+                const bookPrice = $(e).find('div.book-info-2 ul li span.font-color01').last().text().trim();
+                response.push({
+                    source: '城邦讀書花園',
+                    active: true,
+                    name: bookName || '',
+                    cat: bookCat || '',
+                    authors: bookAuthors.length > 0 ? bookAuthors.join() : '',
+                    publisher: bookPublisher || '',
+                    price: bookPrice || 0,
+                    currency: 'TWD',
+                    url: bookUrl ? bookUrl.replace('http://', 'https://') : '',
+                    image: bookImage || '',
+                });
+            });
+        }
+        catch (e) {
+            console.log(e);
+            response.push({
+                source: '城邦讀書花園',
                 active: false,
             });
         }
