@@ -1,9 +1,10 @@
-import * as functions from 'firebase-functions';
-import * as express from 'express';
-import axios from 'axios';
-import { flatten } from 'lodash';
-import * as cheerio from 'cheerio';
+const functions = require('firebase-functions');
+const express = require('express');
+const axios = require('axios');
+const lodash = require('lodash');
+const cheerio = require('cheerio');
 
+const flatten = lodash.flatten;
 const app = express();
 
 const request = axios.create({
@@ -24,18 +25,18 @@ app.get('/isbn/:id', async (req, res) => {
     }
 
     const data = flatten(
-        await Promise.all([
-          getDetailsFromBooksTw(id),
-          getDetailsFromKingstone(id),
-          getDetailsFromCite(id),
-          // getDetailsFromEslite(id),
-        ]),
+      await Promise.all([
+        getDetailsFromBooksTw(id),
+        getDetailsFromKingstone(id),
+        getDetailsFromCite(id),
+        // getDetailsFromEslite(id),
+      ]),
     );
 
     const responses = data
-        .filter(item => item.active)
-        // sort by price ASC default
-        .sort((a, b) => a.price - b.price);
+      .filter(item => item.active)
+      // sort by price ASC default
+      .sort((a, b) => a.price - b.price);
 
     return res.status(200).json({ data: responses });
   } catch (e) {
@@ -127,8 +128,8 @@ async function getDetailsFromKingstone(isbnNumber) {
         name: bookName || '',
         cat: bookCat || '',
         authors: bookAuthors.length > 0
-                    ? bookAuthors.join()
-                    : '',
+          ? bookAuthors.join()
+          : '',
         publisher: bookPublisher || '',
         price: bookPrice ? parseInt(bookPrice, 10) : 0,
         currency: 'TWD',
@@ -162,7 +163,7 @@ async function getDetailsFromCite(isbnNumber) {
       const bookUrl = $(e).find('div.book-info-1 h2 a').attr('href');
       const bookImage = $(e).find('div.book-img a img').attr('src');
       const bookName = $(e).find('div.book-info-1 h2 a').text().trim()
-          .replace('�m', '').replace('�n', '');
+        .replace('�m', '').replace('�n', '');
       const bookCat = '';
       const bookAuthors = [];
       $(e).find('a#writer').each((j, elem) => {
@@ -211,15 +212,15 @@ async function getDetailsFromEslite(isbnNumber) {
       const bookImage = $(e).find('img.cover_img').attr('src');
       const bookName = $(e).find('h3 span').text().trim();
       const bookCat = $(e).find(`span#ctl00_ContentPlaceHolder1_rptProducts_ctl0${i}_LblCate a`)
-          .first().text().trim();
+        .first().text().trim();
       const bookAuthors = [];
       $(e).find(`span#ctl00_ContentPlaceHolder1_rptProducts_ctl0${i}_LblCharacterName a`)
-          .each((j, elem) => {
-            bookAuthors.push($(elem).text().trim());
-          });
+        .each((j, elem) => {
+          bookAuthors.push($(elem).text().trim());
+        });
       const bookPublisher = $(e)
-          .find(`span#ctl00_ContentPlaceHolder1_rptProducts_ctl0${i}_LblManufacturerName a`)
-          .text().trim();
+        .find(`span#ctl00_ContentPlaceHolder1_rptProducts_ctl0${i}_LblManufacturerName a`)
+        .text().trim();
       const bookPrice = $(e).find('span.price_sale font').last().text().trim();
 
       response.push({

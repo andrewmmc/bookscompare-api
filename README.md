@@ -17,14 +17,24 @@ The instructions below will get you a copy of the project up and run on your mac
 
 Clone the repo, and run:
 ``` bash
+# install firebase-tools
+npm install -g firebase-tools
+
+# firebase login
+firebase login
+
 # install dependencies
+cd functions
 npm install
 
 # run in local
-firebase serve
+npm run serve
 ```
 
 ## Changelog
+##### v.1.1.0
+- Update engine from Node v.6.11.5 to Node v.8.9.4
+
 ##### v.1.0.2
 - Add more book stores sources
 
