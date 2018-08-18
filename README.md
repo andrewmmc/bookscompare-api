@@ -32,6 +32,9 @@ npm run serve
 ```
 
 ## Changelog
+##### v.1.1.1
+- Update files structure
+
 ##### v.1.1.0
 - Update engine from Node v.6.11.5 to Node v.8.9.4
 
