@@ -1,15 +1,12 @@
 const cheerio = require('cheerio');
 
-const booksTw = require('../api/booksTw');
-const kingstone = require('../api/kingstone');
-const cite = require('../api/cite');
-const eslite = require('../api/eslite');
+const api = require('../api');
 
 // 博客來 (books.com.tw)
 async function getDetailsFromBooksTw(isbnNumber) {
   const response = [];
   try {
-    const { data } = await booksTw.search(isbnNumber);
+    const { data } = await api.booksTw.search(isbnNumber);
 
     const $ = cheerio.load(data);
     const result = $('form#searchlist ul.searchbook li');
@@ -54,7 +51,7 @@ async function getDetailsFromBooksTw(isbnNumber) {
 async function getDetailsFromKingstone(isbnNumber) {
   const response = [];
   try {
-    const { data } = await kingstone.search(isbnNumber);
+    const { data } = await api.kingstone.search(isbnNumber);
 
     const $ = cheerio.load(data);
     const result = $('div.box.row_list ul li');
@@ -101,7 +98,7 @@ async function getDetailsFromKingstone(isbnNumber) {
 async function getDetailsFromCite(isbnNumber) {
   const response = [];
   try {
-    const { data } = await cite.search(isbnNumber);
+    const { data } = await api.cite.search(isbnNumber);
 
     const $ = cheerio.load(data);
     const result = $('div.book-container ul li.book-area-1');
@@ -147,7 +144,7 @@ async function getDetailsFromCite(isbnNumber) {
 async function getDetailsFromEslite(isbnNumber) {
   const response = [];
   try {
-    const { data } = await eslite.search(isbnNumber);
+    const { data } = await api.eslite.search(isbnNumber);
 
     const $ = cheerio.load(data);
     const result = $('div.box_list table');

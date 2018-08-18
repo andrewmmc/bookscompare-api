@@ -1,9 +1,9 @@
-const helpers = require('./helpers');
+const request = require('../../utils/request');
 const baseUrl = 'https://www.cite.com.tw';
 
 async function search(isbnNumber) {
   const searchUrl = '/search_result?isbn=';
-  return await helpers.request.get(baseUrl + searchUrl + isbnNumber);
+  return await request.get(baseUrl + searchUrl + isbnNumber);
 }
 
 module.exports = {

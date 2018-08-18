@@ -8,6 +8,4 @@ const request = axios.create({
   },
 });
 
-module.exports = {
-  request
-};
+module.exports = request;

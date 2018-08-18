@@ -1,9 +1,9 @@
-const helpers = require('./helpers');
+const request = require('../../utils/request');
 const baseUrl = 'http://www.eslite.com';
 
 async function search(query) {
   const searchUrl = '/Search_BW.aspx?query=';
-  return await helpers.request.get(baseUrl + searchUrl + query);
+  return await request.get(baseUrl + searchUrl + query);
 }
 
 module.exports = {
