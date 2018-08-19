@@ -24,14 +24,14 @@ async function postRegister(req, res) {
       if (error) {
         // TODO: fix this
         // throw _omit(error, 'originalError');
-        return res.status(500).json({
+        return res.status(400).json({
           error: _omit(error, 'originalError')
         });
       }
-      return res.status(200).json(result);
+      return res.status(201).json(result);
     });
   } catch (e) {
-    return res.status(500).json({
+    return res.status(400).json({
       error: e.message
     });
   }
