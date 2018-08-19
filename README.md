@@ -29,9 +29,16 @@ npm install
 
 # run in local
 npm run serve
+
+# deploy
+firebase functions:config:set webapi.key=""
+npm run deploy
 ```
 
 ## Changelog
+##### v.1.2.0
+- Register & Login
+
 ##### v.1.1.1
 - Update files structure
 
