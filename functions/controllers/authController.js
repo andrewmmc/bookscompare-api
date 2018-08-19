@@ -9,7 +9,7 @@ function ValidationError(message) {
   this.message = message;
 }
 
-async function postRegister(req, res) {
+function postRegister(req, res) {
   try {
     const { body: { email, password } } = req;
 
@@ -37,6 +37,35 @@ async function postRegister(req, res) {
   }
 }
 
+function postSignin(req, res) {
+  try {
+    const { body: { email, password } } = req;
+
+    if (typeof email === 'undefined' || typeof password === 'undefined') {
+      throw new ValidationError({
+        code: 'INVALID_ARGUMENT',
+        message: 'Invalid or missing fields.',
+      });
+    }
+
+    firebase.signInWithEmail(email, password, (error, result) => {
+      if (error) {
+        // TODO: fix this
+        // throw _omit(error, 'originalError');
+        return res.status(400).json({
+          error: _omit(error, 'originalError')
+        });
+      }
+      return res.status(200).json(result);
+    });
+  } catch (e) {
+    return res.status(400).json({
+      error: e.message
+    });
+  }
+}
+
 module.exports = {
   postRegister,
+  postSignin,
 };
