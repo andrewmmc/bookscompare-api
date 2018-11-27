@@ -1,4 +1,7 @@
 # BooksCompare API
+
+[![Greenkeeper badge](https://badges.greenkeeper.io/andrewmmc/bookscompare-api.svg)](https://greenkeeper.io/)
+
 Built with Firebase, Express.
 
 Simple RESTful API for fetching books pricing from major online book stores in Taiwan. Just a MVP.
