@@ -40,7 +40,7 @@ app.get('/isbn/:id', async (req: express.Request, res: express.Response) => {
         const data = _flatten(
             await Promise.all([
                 getDetailsFromBooksTw(id),
-                // getDetailsFromKingstone(id),
+                getDetailsFromKingstone(id),
                 // getDetailsFromCite(id),
             ]),
         );
@@ -80,7 +80,7 @@ async function getDetailsFromBooksTw(isbnNumber: string) {
             const cat: string = $(e).find('span.cat').text().trim() || '';
             const authors: string = $(e).find('a[rel=go_author]').map((_, elem) => $(elem).text().trim()).get().join();
             const publisher: string = $(e).find('a[rel=mid_publish]').text().trim() || '';
-            const [price]: any = PRICE_REGEX.exec($(e).find('span.price strong').last().text().trim());
+            const [price]: RegExpExecArray|string[] = PRICE_REGEX.exec($(e).find('span.price strong').last().text().trim()) || [''];
 
             const details: Book = {
                 source: '博客來',
@@ -103,53 +103,45 @@ async function getDetailsFromBooksTw(isbnNumber: string) {
 }
 
 // 金石堂 (kingstone.com.tw)
-// async function getDetailsFromKingstone(isbnNumber: string) {
-//     const response = [];
-//     try {
-//         const baseUrl = 'https://www.kingstone.com.tw';
-//         const searchUrl = '/search/result.asp?c_name=';
-//         const {data} = await request.get(baseUrl + searchUrl + isbnNumber);
-//
-//         const $ = cheerio.load(data);
-//         const result = $('div.box.row_list ul li');
-//         if (result.length === 0) throw new Error('No result found');
-//
-//         result.each((i, e) => {
-//             const bookUrl = $(e).find('a.anchor').attr('href');
-//             const bookImage = $(e).find('a.anchor img').attr('src');
-//             const bookName = $(e).find('a.anchor span').text().trim();
-//             const bookCat = $(e).find('span.classification a.main_class').text().trim();
-//             const bookAuthors = [];
-//             $(e).find('span.author a').each((j, elem) => {
-//                 bookAuthors.push($(elem).text().trim());
-//             });
-//             const bookPublisher = $(e).find('span.publisher a').text().trim();
-//             const bookPrice = $(e).find('span.price span').last().text().trim().match(/\d+/).join('');
-//
-//             response.push({
-//                 source: '金石堂',
-//                 active: true,
-//                 name: bookName || '',
-//                 cat: bookCat || '',
-//                 authors: bookAuthors.length > 0
-//                     ? bookAuthors.join()
-//                     : '',
-//                 publisher: bookPublisher || '',
-//                 price: bookPrice ? parseInt(bookPrice, 10) : 0,
-//                 currency: 'TWD',
-//                 url: bookUrl ? baseUrl + bookUrl : '',
-//                 image: bookImage || '',
-//             });
-//         });
-//     } catch (e) {
-//         console.log(e);
-//         response.push({
-//             source: '金石堂',
-//             active: false,
-//         });
-//     }
-//     return response;
-// }
+async function getDetailsFromKingstone(isbnNumber: string) {
+    try {
+        const baseUrl = 'https://www.kingstone.com.tw';
+        const searchUrl = '/search/result.asp?c_name=';
+        const {data} = await request.get(baseUrl + searchUrl + isbnNumber);
+
+        const $ = cheerio.load(data);
+        const result = $('div.box.row_list ul li');
+
+        if (!result.length) return [];
+
+        return result.map((_, e) => {
+            const url: string = $(e).find('a.anchor').attr('href') || '';
+            const image: string = $(e).find('a.anchor img').attr('src') || '';
+            const name: string = $(e).find('a.anchor span').text().trim() || '';
+            const cat: string = $(e).find('span.classification a.main_class').text().trim() || '';
+            const authors: string = $(e).find('span.author a').map((_, elem) => $(elem).text().trim()).get().join();
+            const publisher: string = $(e).find('span.publisher a').text().trim() || '';
+            const [price]: RegExpExecArray|string[] = PRICE_REGEX.exec($(e).find('span.price span').last().text().trim()) || [''];
+
+            const details: Book = {
+                source: '金石堂',
+                active: true,
+                name,
+                url: url ? `${baseUrl}${url}` : '',
+                image,
+                cat,
+                authors,
+                publisher,
+                price: parseInt(price, 10) || 0,
+                currency: 'TWD',
+            };
+            return details;
+        }).get();
+    } catch (e) {
+        console.log(e);
+        return [];
+    }
+}
 
 // 城邦讀書花園 (cite.com.tw)
 // async function getDetailsFromCite(isbnNumber: string) {
